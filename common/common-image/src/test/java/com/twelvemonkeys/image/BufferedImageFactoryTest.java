@@ -48,20 +48,24 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedImageFactoryTestCase.java,v 1.0 May 7, 2010 12:40:08 PM haraldk Exp$
  */
-class BufferedImageFactoryTest {
+public class BufferedImageFactoryTest {
     @Test
-    void testCreateNullImage() {
-        assertThrows(IllegalArgumentException.class, () -> new BufferedImageFactory((Image) null));
+    public void testCreateNullImage() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new BufferedImageFactory((Image) null);
+        });
     }
 
     @Test
-    void testCreateNullProducer() {
-        assertThrows(IllegalArgumentException.class, () -> new BufferedImageFactory((ImageProducer) null));
+    public void testCreateNullProducer() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new BufferedImageFactory((ImageProducer) null);
+        });
     }
 
     // NPE in Toolkit, ok
     @Test
-    void testGetBufferedImageErrorSourceByteArray() {
+    public void testGetBufferedImageErrorSourceByteArray() {
         assertThrows(RuntimeException.class, () -> {
             Image source = Toolkit.getDefaultToolkit().createImage((byte[]) null);
             new BufferedImageFactory(source);
@@ -69,16 +73,18 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testGetBufferedImageErrorSourceImageProducer() {
+    public void testGetBufferedImageErrorSourceImageProducer() {
         Image source = Toolkit.getDefaultToolkit().createImage((ImageProducer) null);
-        assertThrows(IllegalArgumentException.class, () -> new BufferedImageFactory(source));
+        assertThrows(IllegalArgumentException.class, () -> {
+            new BufferedImageFactory(source);
+        });
     }
 
     // TODO: This is a quite serious bug, however, the bug is in the Toolkit, allowing such images in the first place...
     // In any case, there's not much we can do, except until someone is bored and kills the app/thread... :-P
     @Disabled("Bug in Toolkit")
     @Test
-    void testGetBufferedImageErrorSourceString() {
+    public void testGetBufferedImageErrorSourceString() {
         assertTimeoutPreemptively(Duration.ofMillis(1000), () -> {
             Image source = Toolkit.getDefaultToolkit().createImage((String) null);
             BufferedImageFactory factory = new BufferedImageFactory(source);
@@ -89,7 +95,7 @@ class BufferedImageFactoryTest {
     // This is a little random, and it would be nicer if we could throw an IllegalArgumentException on create.
     // Unfortunately, the API doesn't allow this...
     @Test
-    void testGetBufferedImageErrorSourceURL() {
+    public void testGetBufferedImageErrorSourceURL() {
         assertTimeoutPreemptively(Duration.ofMillis(1000), () -> {
             Image source = Toolkit.getDefaultToolkit().createImage((String) null);
             BufferedImageFactory factory = new BufferedImageFactory(source);
@@ -98,7 +104,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testGetBufferedImageJPEG() {
+    public void testGetBufferedImageJPEG() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -112,7 +118,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testGetColorModelJPEG() {
+    public void testGetColorModelJPEG() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -131,7 +137,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testGetBufferedImageGIF() {
+    public void testGetBufferedImageGIF() {
         URL resource = getClass().getResource("/tux.gif");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -153,7 +159,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testGetColorModelGIF() {
+    public void testGetColorModelGIF() {
         URL resource = getClass().getResource("/tux.gif");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -179,7 +185,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testGetBufferedImageSubsampled() {
+    public void testGetBufferedImageSubsampled() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -203,7 +209,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testGetBufferedImageSourceRegion() {
+    public void testGetBufferedImageSourceRegion() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -226,7 +232,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testGetBufferedImageSubsampledSourceRegion() {
+    public void testGetBufferedImageSubsampledSourceRegion() throws Exception{
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -250,7 +256,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testAbort() throws Exception {
+    public void testAbort() throws Exception {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -273,16 +279,16 @@ class BufferedImageFactoryTest {
         assertEquals(283, image.getHeight());
 
         // Upper right should be loaded
-        assertEquals(0x68, (image.getRGB(186, 0) & 0xFF0000) >> 16, 10);
-        assertEquals(0x91, (image.getRGB(186, 0) & 0xFF00) >> 8, 10);
-        assertEquals(0xE0, image.getRGB(186, 0) & 0xFF, 10);
+        assertEquals((image.getRGB(186, 0) & 0xFF0000) >> 16 , 0x68, 10);
+        assertEquals((image.getRGB(186, 0) & 0xFF00) >> 8, 0x91, 10);
+        assertEquals(image.getRGB(186, 0) & 0xFF, 0xE0, 10);
 
         // Lower right should be blank
-        assertEquals(0, image.getRGB(186, 282) & 0xFFFFFF);
+        assertEquals(image.getRGB(186, 282) & 0xFFFFFF, 0);
     }
 
     @Test
-    void testListener() {
+    public void testListener() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -298,7 +304,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testRemoveListener() {
+    public void testRemoveListener() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -315,7 +321,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testRemoveNullListener() {
+    public void testRemoveNullListener() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -332,7 +338,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testRemoveNotAdddedListener() {
+    public void testRemoveNotAdddedListener() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);
@@ -352,7 +358,7 @@ class BufferedImageFactoryTest {
     }
 
     @Test
-    void testRemoveAllListeners() {
+    public void testRemoveAllListeners() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
         Image source = Toolkit.getDefaultToolkit().createImage(resource);

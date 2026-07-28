@@ -39,16 +39,33 @@ import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 
-import static com.twelvemonkeys.image.ImageUtilTest.createImage;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * AreaAverageOpTest
  */
-class AreaAverageOpTest {
+public class AreaAverageOpTest {
+
+    protected BufferedImage createImage(final int pWidth, final int pHeight) {
+        return createImage(pWidth, pHeight, BufferedImage.TYPE_INT_ARGB);
+    }
+
+    protected BufferedImage createImage(final int pWidth, final int pHeight, final int pType) {
+        BufferedImage image = new BufferedImage(pWidth, pHeight, pType);
+        Graphics2D g = image.createGraphics();
+        try {
+            g.setPaint(new GradientPaint(0, 0, Color.RED, pWidth, pHeight, Color.BLUE));
+            g.fillRect(0, 0, pWidth, pHeight);
+        }
+        finally {
+            g.dispose();
+        }
+
+        return image;
+    }
 
     @Test
-    void testFilterDifferentTypes() {
+    public void testFilterDifferentTypes() {
         int[] types = {
                 BufferedImage.TYPE_INT_ARGB,
                 BufferedImage.TYPE_INT_RGB,
@@ -73,7 +90,7 @@ class AreaAverageOpTest {
     }
 
     @Test
-    void testFilterUshort() {
+    public void testFilterUshort() {
         // TYPE_USHORT_GRAY and custom types using USHORT
         int targetW = 5;
         int targetH = 5;
@@ -100,7 +117,7 @@ class AreaAverageOpTest {
     }
 
     @Test
-    void testFilterRaster() {
+    public void testFilterRaster() {
         int targetW = 10;
         int targetH = 10;
         AreaAverageOp op = new AreaAverageOp(targetW, targetH);
@@ -115,7 +132,7 @@ class AreaAverageOpTest {
 
 
     @Test
-    void testCreateCompatibleDestImage() {
+    public void testCreateCompatibleDestImage() {
         AreaAverageOp op = new AreaAverageOp(10, 10);
         BufferedImage src = createImage(20, 20, BufferedImage.TYPE_INT_RGB);
         BufferedImage dest = op.createCompatibleDestImage(src, null);
@@ -127,7 +144,7 @@ class AreaAverageOpTest {
     }
 
     @Test
-    void testCreateCompatibleDestRaster() {
+    public void testCreateCompatibleDestRaster() {
         AreaAverageOp op = new AreaAverageOp(10, 10);
         BufferedImage src = createImage(20, 20);
         Raster srcRaster = src.getRaster();
@@ -139,7 +156,7 @@ class AreaAverageOpTest {
     }
 
     @Test
-    void testGetBounds2D() {
+    public void testGetBounds2D() {
         AreaAverageOp op = new AreaAverageOp(10, 10);
         BufferedImage src = createImage(20, 20);
         Rectangle2D bounds = op.getBounds2D(src);
@@ -150,7 +167,7 @@ class AreaAverageOpTest {
     }
 
     @Test
-    void testGetPoint2D() {
+    public void testGetPoint2D() {
         int targetW = 10;
         int targetH = 10;
         AreaAverageOp op = new AreaAverageOp(targetW, targetH);
@@ -169,7 +186,7 @@ class AreaAverageOpTest {
     }
 
     @Test
-    void testGetRenderingHints() {
+    public void testGetRenderingHints() {
         AreaAverageOp op = new AreaAverageOp(10, 10);
         assertNull(op.getRenderingHints());
     }

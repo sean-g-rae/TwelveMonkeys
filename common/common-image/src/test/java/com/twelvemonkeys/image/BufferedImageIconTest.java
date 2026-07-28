@@ -32,6 +32,7 @@ package com.twelvemonkeys.image;
 
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,34 +41,35 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * BufferedImageIconTest
  */
-class BufferedImageIconTest {
-
-    private final BufferedImage testImage = new BufferedImage(10, 20, BufferedImage.TYPE_INT_ARGB);
+public class BufferedImageIconTest {
 
     @Test
-    void testConstructorNullImage() {
+    public void testConstructorNullImage() {
         assertThrows(NullPointerException.class, () -> new BufferedImageIcon(null));
     }
 
     @Test
-    void testConstructorDefault() {
-        BufferedImageIcon icon = new BufferedImageIcon(testImage);
+    public void testConstructorDefault() {
+        BufferedImage image = new BufferedImage(10, 20, BufferedImage.TYPE_INT_ARGB);
+        BufferedImageIcon icon = new BufferedImageIcon(image);
         assertEquals(10, icon.getIconWidth());
         assertEquals(20, icon.getIconHeight());
     }
 
     @Test
-    void testConstructorCustomSize() {
-        BufferedImageIcon icon = new BufferedImageIcon(testImage, 30, 40);
+    public void testConstructorCustomSize() {
+        BufferedImage image = new BufferedImage(10, 20, BufferedImage.TYPE_INT_ARGB);
+        BufferedImageIcon icon = new BufferedImageIcon(image, 30, 40);
         assertEquals(30, icon.getIconWidth());
         assertEquals(40, icon.getIconHeight());
     }
 
     @Test
-    void testConstructorIllegalSize() {
-        assertThrows(IllegalArgumentException.class, () -> new BufferedImageIcon(testImage, 0, 40));
-        assertThrows(IllegalArgumentException.class, () -> new BufferedImageIcon(testImage, 30, 0));
-        assertThrows(IllegalArgumentException.class, () -> new BufferedImageIcon(testImage, -1, 40));
-        assertThrows(IllegalArgumentException.class, () -> new BufferedImageIcon(testImage, 30, -1));
+    public void testConstructorIllegalSize() {
+        BufferedImage image = new BufferedImage(10, 20, BufferedImage.TYPE_INT_ARGB);
+        assertThrows(IllegalArgumentException.class, () -> new BufferedImageIcon(image, 0, 40));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedImageIcon(image, 30, 0));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedImageIcon(image, -1, 40));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedImageIcon(image, 30, -1));
     }
 }

@@ -36,10 +36,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * InverseColorMapTest
  */
-class InverseColorMapTest {
+public class InverseColorMapTest {
 
     @Test
-    void testConstructorByteArray() {
+    public void testConstructorByteArray() {
         byte[] colors = {
                 (byte) 0, (byte) 0, (byte) 0, (byte) 255,
                 (byte) 255, (byte) 255, (byte) 255, (byte) 255
@@ -50,7 +50,7 @@ class InverseColorMapTest {
     }
 
     @Test
-    void testConstructorIntArray() {
+    public void testConstructorIntArray() {
         int[] colors = {
                 0xFF000000,
                 0xFFFFFFFF
@@ -61,7 +61,7 @@ class InverseColorMapTest {
     }
 
     @Test
-    void testConstructorByteArrayTransparent() {
+    public void testConstructorByteArrayTransparent() {
         byte[] colors = {
                 (byte) 255, (byte) 0, (byte) 0, (byte) 255, // Red
                 (byte) 0, (byte) 0, (byte) 0, (byte) 0,     // Transparent
@@ -76,7 +76,7 @@ class InverseColorMapTest {
     }
 
     @Test
-    void testConstructorIntArrayTransparent() {
+    public void testConstructorIntArrayTransparent() {
         int[] colors = {
                 0xFFFF0000, // Red
                 0x00000000, // Transparent
@@ -90,7 +90,7 @@ class InverseColorMapTest {
     }
 
     @Test
-    void testGetIndexNearestRGB() {
+    public void testGetIndexNearestRGB() {
         int[] colors = {
                 0xFFFF0000, // 0: Red
                 0xFF00FF00, // 1: Green
@@ -109,7 +109,7 @@ class InverseColorMapTest {
     }
 
     @Test
-    void testGetIndexNearestColor() {
+    public void testGetIndexNearestColor() {
         int[] colors = {
                 0xFFFF0000, // 0: Red
                 0xFF00FF00, // 1: Green
@@ -128,7 +128,7 @@ class InverseColorMapTest {
     }
 
     @Test
-    void testGetIndexNearestColorWithOffset() {
+    public void testGetIndexNearestColorWithOffset() {
         // Test that color mapping is correct even with offsets in 24-bit color
         int[] colors = {
                 0xFFFF0000,
@@ -143,7 +143,7 @@ class InverseColorMapTest {
     }
 
     @Test
-    void testGetIndexNearestColorWithAlpha() {
+    public void testGetIndexNearestColorWithAlpha() {
         // Test that alpha bits are ignored in getIndexNearest(int pColor)
         int[] colors = {
                 0xFFFF0000,
@@ -158,14 +158,14 @@ class InverseColorMapTest {
     }
 
     @Test
-    void testEmptyColorMap() {
+    public void testEmptyColorMap() {
         // It seems empty colormap doesn't throw exception but might cause issues later or just result in 0
         InverseColorMap icm = new InverseColorMap(new int[0]);
         assertEquals(0, icm.getIndexNearest(0x000000));
     }
 
     @Test
-    void testNullColorMap() {
+    public void testNullColorMap() {
         assertThrows(NullPointerException.class, () -> new InverseColorMap((int[]) null));
         assertThrows(NullPointerException.class, () -> new InverseColorMap((byte[]) null));
     }

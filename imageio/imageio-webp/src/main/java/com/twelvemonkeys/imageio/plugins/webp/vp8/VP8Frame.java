@@ -67,17 +67,6 @@ public final class VP8Frame {
     private int macroBlockRows;
 
     private MacroBlock[][] macroBlocks;
-    private MacroBlock[] currentMacroBlockRow;
-    private int currentMacroBlockRowIndex;
-    private int[][] filterLevels;
-    private MacroBlock[] lastNonBPredMacroBlockByColumn;
-    private int[][] segmentIds;
-    private int[][] skipCoeffs;
-    private int[][] uvModes;
-    private int[][][] ySubBlockModes;
-    private int[][] yModes;
-    private MacroBlock[] previousMacroBlockRow;
-    private MacroBlock[] topMacroBlockRow;
     private int macroBlockSegementAbsoluteDelta;
     private int[] macroBlockSegmentTreeProbs;
     private final int[] modeLoopFilterDeltas = new int[MAX_MODE_LF_DELTAS];
@@ -112,77 +101,13 @@ public final class VP8Frame {
         this.listener = listener;
     }
 
-    private void createMacroBlockMetadata() {
-        segmentIds = new int[macroBlockRows][macroBlockCols];
-        filterLevels = new int[macroBlockRows][macroBlockCols];
-        skipCoeffs = new int[macroBlockRows][macroBlockCols];
-        yModes = new int[macroBlockRows][macroBlockCols];
-        uvModes = new int[macroBlockRows][macroBlockCols];
-        ySubBlockModes = new int[macroBlockRows][macroBlockCols][16];
-    }
-
-    private MacroBlock[] createMacroBlockRow(final int mbRow) {
-        MacroBlock[] row = new MacroBlock[macroBlockCols + 2];
-
-        for (int mbCol = 0; mbCol < macroBlockCols + 2; mbCol++) {
-            row[mbCol] = new MacroBlock(mbCol, mbRow + 1, debug);
-        }
-
-        return row;
-    }
-
-    private void populateMacroBlock(final MacroBlock macroBlock, final int mbRow, final int mbCol) {
-        macroBlock.setSegmentId(segmentIds[mbRow][mbCol]);
-        macroBlock.setFilterLevel(filterLevels[mbRow][mbCol]);
-        macroBlock.setSkipCoeff(skipCoeffs[mbRow][mbCol]);
-        macroBlock.setYMode(yModes[mbRow][mbCol]);
-        macroBlock.setUvMode(uvModes[mbRow][mbCol]);
-
-        int[] modes = ySubBlockModes[mbRow][mbCol];
-        for (int y = 0; y < 4; y++) {
-            for (int x = 0; x < 4; x++) {
-                macroBlock.getYSubBlock(x, y).setMode(modes[y * 4 + x]);
+    private void createMacroBlocks() {
+        macroBlocks = new MacroBlock[macroBlockRows + 2][macroBlockCols + 2];
+        for (int y = 0; y < macroBlockRows + 2; y++) {
+            for (int x = 0; x < macroBlockCols + 2; x++) {
+                macroBlocks[y][x] = new MacroBlock(x, y, debug);
             }
         }
-    }
-
-    private void initializeWindowedDecodeState() {
-        createMacroBlockMetadata();
-        topMacroBlockRow = createMacroBlockRow(-1);
-        previousMacroBlockRow = topMacroBlockRow;
-        currentMacroBlockRow = null;
-        currentMacroBlockRowIndex = -1;
-        lastNonBPredMacroBlockByColumn = new MacroBlock[macroBlockCols + 2];
-
-        System.arraycopy(topMacroBlockRow, 0, lastNonBPredMacroBlockByColumn, 0, macroBlockCols + 2);
-    }
-
-    private static int ySubBlockModeIndex(final int subX, final int subY) {
-        return subY * 4 + subX;
-    }
-
-    private int getYSubBlockMode(final int mbRow, final int mbCol, final int subX, final int subY) {
-        if (mbRow < 0 || mbCol < 0 || mbRow >= macroBlockRows || mbCol >= macroBlockCols) {
-            return 0;
-        }
-
-        return ySubBlockModes[mbRow][mbCol][ySubBlockModeIndex(subX, subY)];
-    }
-
-    private int getAboveYSubBlockMode(final int mbRow, final int mbCol, final int subX, final int subY) {
-        if (subY > 0) {
-            return getYSubBlockMode(mbRow, mbCol, subX, subY - 1);
-        }
-
-        return getYSubBlockMode(mbRow - 1, mbCol, subX, 3);
-    }
-
-    private int getLeftYSubBlockMode(final int mbRow, final int mbCol, final int subX, final int subY) {
-        if (subX > 0) {
-            return getYSubBlockMode(mbRow, mbCol, subX - 1, subY);
-        }
-
-        return getYSubBlockMode(mbRow, mbCol - 1, 3, subY);
     }
 
     public boolean decode(final WritableRaster raster, final ImageReadParam param) throws IOException {
@@ -252,7 +177,7 @@ public final class VP8Frame {
 //        logger.log("macroBlockCols: " + macroBlockCols);
 //        logger.log("macroBlockRows: " + macroBlockRows);
 
-        initializeWindowedDecodeState();
+        createMacroBlocks();
 
         offset = frame.getStreamPosition();
 
@@ -418,14 +343,7 @@ public final class VP8Frame {
                 }
             }
 
-            currentMacroBlockRow = createMacroBlockRow(row);
-            currentMacroBlockRowIndex = row;
-
             decodeMacroBlockRow(row, raster, region, sourceXSubsampling, sourceYSubsampling);
-
-            previousMacroBlockRow = currentMacroBlockRow;
-            currentMacroBlockRow = null;
-            currentMacroBlockRowIndex = -1;
 
             fireProgressUpdate(row);
         }
@@ -438,13 +356,11 @@ public final class VP8Frame {
         final boolean filter = filterLevel != 0;
 
         MacroBlock left = null;
-        MacroBlock[] prevRow = previousMacroBlockRow;
-        MacroBlock[] currRow = currentMacroBlockRow;
+        MacroBlock[] prevRow = macroBlocks[mbRow];
+        MacroBlock[] currRow = macroBlocks[mbRow + 1];
 
         for (int mbCol = 0; mbCol < macroBlockCols; mbCol++) {
             MacroBlock mb = currRow[mbCol + 1];
-
-            populateMacroBlock(mb, mbRow, mbCol);
 
             mb.decodeMacroBlock(this);
             mb.dequantMacroBlock(this);
@@ -455,10 +371,6 @@ public final class VP8Frame {
             }
 
             copyBlock(mb, raster, region, xSubsampling, ySubsampling);
-
-            if (mb.getYMode() != Globals.B_PRED) {
-                lastNonBPredMacroBlockByColumn[mbCol + 1] = mb;
-            }
 
             left = mb;
         }
@@ -471,7 +383,7 @@ public final class VP8Frame {
         }
     }
 
-    SubBlock getAboveRightSubBlock(SubBlock sb, SubBlock.Plane plane) {
+    public SubBlock getAboveRightSubBlock(SubBlock sb, SubBlock.Plane plane) {
         // this might break at right edge
         SubBlock r;
         MacroBlock mb = sb.getMacroBlock();
@@ -526,7 +438,7 @@ public final class VP8Frame {
         }
     }
 
-    SubBlock getAboveSubBlock(SubBlock sb, SubBlock.Plane plane) {
+    public SubBlock getAboveSubBlock(SubBlock sb, SubBlock.Plane plane) {
         SubBlock above = sb.getAbove();
 
         if (above == null) {
@@ -535,8 +447,8 @@ public final class VP8Frame {
 
             MacroBlock mb2 = getMacroBlock(mb.getX(), mb.getY() - 1);
             //TODO: SPLIT
-            if (plane == SubBlock.Plane.Y2 && mb2.getYMode() == Globals.B_PRED) {
-                mb2 = lastNonBPredMacroBlockByColumn[mb.getX() + 1];
+            while (plane == SubBlock.Plane.Y2 && mb2.getYMode() == Globals.B_PRED) {
+                mb2 = getMacroBlock(mb2.getX(), mb2.getY() - 1);
             }
 
             above = mb2.getBottomSubBlock(x, sb.getPlane());
@@ -875,7 +787,7 @@ public final class VP8Frame {
         return height;
     }
 
-    SubBlock getLeftSubBlock(SubBlock sb, SubBlock.Plane plane) {
+    public SubBlock getLeftSubBlock(SubBlock sb, SubBlock.Plane plane) {
         SubBlock r = sb.getLeft();
         if (r == null) {
             MacroBlock mb = sb.getMacroBlock();
@@ -893,28 +805,9 @@ public final class VP8Frame {
         return r;
     }
 
-    MacroBlock getMacroBlock(int mbCol, int mbRow) {
-        if (mbRow == currentMacroBlockRowIndex && currentMacroBlockRow != null) {
-            return currentMacroBlockRow[mbCol + 1];
-        }
-
-        if (mbRow == currentMacroBlockRowIndex - 1 && previousMacroBlockRow != null) {
-            return previousMacroBlockRow[mbCol + 1];
-        }
-
-        if (mbRow < currentMacroBlockRowIndex - 1 && mbRow >= -1) {
-            if (mbCol < 0 || mbCol >= macroBlockCols) {
-                return topMacroBlockRow[mbCol + 1];
-            }
-
-            return lastNonBPredMacroBlockByColumn[mbCol + 1];
-        }
-
-        if (mbRow < 0 || mbRow >= macroBlockRows || mbCol < 0 || mbCol >= macroBlockCols) {
-            return topMacroBlockRow[mbCol + 1];
-        }
-
-        return topMacroBlockRow[mbCol + 1];
+    public MacroBlock getMacroBlock(int mbCol, int mbRow) {
+//         return macroBlocks[mbCol + 1][mbRow + 1];
+        return macroBlocks[mbRow + 1][mbCol + 1];
     }
 
     public int getMacroBlockCols() {
@@ -1032,65 +925,85 @@ public final class VP8Frame {
         while (++mb_row < macroBlockRows) {
             int mb_col = -1;
             while (++mb_col < macroBlockCols) {
+                //if (this.segmentation_enabled > 0) {
+                //	logger.log(Level.SEVERE, "TODO:");
+                //	throw new IllegalArgumentException("bad input: segmentation_enabled()");
+                //}
+                // Read the macroblock coeff skip flag if this feature is in
+                // use, else default to 0
+                MacroBlock mb = getMacroBlock(mb_col, mb_row);
+
                 if ((segmentationIsEnabled > 0) && (updateMacroBlockSegmentationMap > 0)) {
-                    segmentIds[mb_row][mb_col] = bc.readTree(Globals.macroBlockSegmentTree, this.macroBlockSegmentTreeProbs, 0);
+                    int value = bc.readTree(Globals.macroBlockSegmentTree, this.macroBlockSegmentTreeProbs, 0);
+                    mb.setSegmentId(value);
                 }
 
                 if (modeRefLoopFilterDeltaEnabled > 0) {
-                    int level = filterLevel + refLoopFilterDeltas[0];
-                    filterLevels[mb_row][mb_col] = (level < 0) ? 0 : Math.min(level, 63);
+                    int level = filterLevel;
+                    level = level + refLoopFilterDeltas[0];
+                    level = (level < 0) ? 0 : Math.min(level, 63);
+                    mb.setFilterLevel(level);
                 }
                 else {
-                    filterLevels[mb_row][mb_col] = segmentQuants.getSegQuants()[segmentIds[mb_row][mb_col]].getFilterStrength();
+                    mb.setFilterLevel(segmentQuants.getSegQuants()[mb.getSegmentId()].getFilterStrength());
                 }
 
-                skipCoeffs[mb_row][mb_col] = macroBlockNoCoeffSkip > 0 ? bc.readBool(prob_skip_false) : 0;
+                int mb_skip_coeff = macroBlockNoCoeffSkip > 0 ? bc.readBool(prob_skip_false) : 0;
 
-                int yMode = readYMode(bc);
-                yModes[mb_row][mb_col] = yMode;
+                mb.setSkipCoeff(mb_skip_coeff);
 
-                if (yMode == Globals.B_PRED) {
-                    for (int subY = 0; subY < 4; subY++) {
-                        for (int subX = 0; subX < 4; subX++) {
-                            int aboveMode = getAboveYSubBlockMode(mb_row, mb_col, subX, subY);
-                            int leftMode = getLeftYSubBlockMode(mb_row, mb_col, subX, subY);
-                            int mode = readSubBlockMode(bc, aboveMode, leftMode);
-                            ySubBlockModes[mb_row][mb_col][ySubBlockModeIndex(subX, subY)] = mode;
+                int y_mode = readYMode(bc);
+
+                mb.setYMode(y_mode);
+
+                if (y_mode == Globals.B_PRED) {
+                    for (int i = 0; i < 4; i++) {
+                        for (int j = 0; j < 4; j++) {
+                            SubBlock sb = mb.getYSubBlock(j, i);
+                            SubBlock A = getAboveSubBlock(sb, SubBlock.Plane.Y1);
+                            SubBlock L = getLeftSubBlock(sb, SubBlock.Plane.Y1);
+
+                            int mode = readSubBlockMode(bc, A.getMode(), L.getMode());
+
+                            sb.setMode(mode);
                         }
                     }
 
                     if (modeRefLoopFilterDeltaEnabled > 0) {
-                        int level = filterLevels[mb_row][mb_col] + this.modeLoopFilterDeltas[0];
-                        filterLevels[mb_row][mb_col] = (level < 0) ? 0 : Math.min(level, 63);
+                        int level = mb.getFilterLevel();
+                        level = level + this.modeLoopFilterDeltas[0];
+                        level = (level < 0) ? 0 : Math.min(level, 63);
+                        mb.setFilterLevel(level);
                     }
                 }
                 else {
-                    int blockMode;
+                    int BMode;
 
-                    switch (yMode) {
+                    switch (y_mode) {
                         case Globals.V_PRED:
-                            blockMode = Globals.B_VE_PRED;
+                            BMode = Globals.B_VE_PRED;
                             break;
                         case Globals.H_PRED:
-                            blockMode = Globals.B_HE_PRED;
+                            BMode = Globals.B_HE_PRED;
                             break;
                         case Globals.TM_PRED:
-                            blockMode = Globals.B_TM_PRED;
+                            BMode = Globals.B_TM_PRED;
                             break;
                         case Globals.DC_PRED:
                         default:
-                            blockMode = Globals.B_DC_PRED;
+                            BMode = Globals.B_DC_PRED;
                             break;
                     }
 
-                    for (int subY = 0; subY < 4; subY++) {
-                        for (int subX = 0; subX < 4; subX++) {
-                            ySubBlockModes[mb_row][mb_col][ySubBlockModeIndex(subX, subY)] = blockMode;
+                    for (int x = 0; x < 4; x++) {
+                        for (int y = 0; y < 4; y++) {
+                            SubBlock sb = mb.getYSubBlock(x, y);
+                            sb.setMode(BMode);
                         }
                     }
                 }
-
-                uvModes[mb_row][mb_col] = readUvMode(bc);
+                int mode = readUvMode(bc);
+                mb.setUvMode(mode);
             }
         }
     }

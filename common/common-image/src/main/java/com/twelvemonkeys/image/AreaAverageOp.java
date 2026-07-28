@@ -94,6 +94,7 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
 
         // TODO: Also check if the images are really compatible!?
 
+        long start = System.currentTimeMillis();
         // Straight-forward version
         //Image scaled = src.getScaledInstance(width, height, Image.SCALE_AREA_AVERAGING);
         //ImageUtil.drawOnto(result, scaled);
@@ -136,6 +137,9 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
 
         // The real version
         filterImpl(src.getRaster(), result.getRaster());
+
+        long time = System.currentTimeMillis() - start;
+        System.out.println("time: " + time);
 
         return result;
     }

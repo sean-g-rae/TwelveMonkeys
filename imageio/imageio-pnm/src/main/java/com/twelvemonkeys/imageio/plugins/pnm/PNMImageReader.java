@@ -62,15 +62,6 @@ public final class PNMImageReader extends ImageReaderBase {
     // TODO: Allow reading unknown tuple types as Raster!
     // TODO: readAsRenderedImage?
 
-    /**
-     * Maximum decoded-to-input expansion ratio for PNM, used to bound the destination allocation against the
-     * input length. The worst case is binary PBM: the size guard counts the 1-bit destination as 1 byte/pixel
-     * against a packed input of 1/8 byte/pixel, i.e. 8:1. This is a guard accounting bound, not real memory
-     * growth, since the 1-bit raster is itself packed. All other variants are roughly 1:1 (ASCII input is
-     * larger than the raster), so 8:1 covers every variant without rejecting a fully present file.
-     */
-    private static final int MAX_EXPANSION_RATIO = 8;
-
     private PNMHeader header;
 
     PNMImageReader(final ImageReaderSpi provider) {
@@ -212,7 +203,7 @@ public final class PNMImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
-        BufferedImage destination = getDestination(param, imageTypes, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage destination = getDestination(param, imageTypes, width, height);
 
         Rectangle srcRegion = new Rectangle();
         Rectangle destRegion = new Rectangle();

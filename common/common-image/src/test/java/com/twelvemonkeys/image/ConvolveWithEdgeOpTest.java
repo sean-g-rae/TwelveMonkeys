@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * ConvolveWithEdgeOpTest
  */
-class ConvolveWithEdgeOpTest {
+public class ConvolveWithEdgeOpTest {
 
     private final Kernel kernel3x3 = new Kernel(3, 3, new float[]{
             0, 0, 0,
@@ -51,14 +51,14 @@ class ConvolveWithEdgeOpTest {
     });
 
     @Test
-    void testConstructor() {
+    public void testConstructor() {
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3);
         assertEquals(ConvolveWithEdgeOp.EDGE_ZERO_FILL, op.getEdgeCondition());
         assertArrayEquals(kernel3x3.getKernelData(null), op.getKernel().getKernelData(null));
     }
 
     @Test
-    void testConstructorFull() {
+    public void testConstructorFull() {
         RenderingHints hints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3, ConvolveWithEdgeOp.EDGE_REFLECT, hints);
         assertEquals(ConvolveWithEdgeOp.EDGE_REFLECT, op.getEdgeCondition());
@@ -67,20 +67,20 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testFilterNull() {
+    public void testFilterNull() {
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3);
         assertThrows(NullPointerException.class, () -> op.filter((BufferedImage) null, null));
     }
 
     @Test
-    void testFilterSame() {
+    public void testFilterSame() {
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3);
         BufferedImage img = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
         assertThrows(IllegalArgumentException.class, () -> op.filter(img, img));
     }
 
     @Test
-    void testGetBounds2D() {
+    public void testGetBounds2D() {
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3);
         BufferedImage img = new BufferedImage(10, 20, BufferedImage.TYPE_INT_ARGB);
         Rectangle2D bounds = op.getBounds2D(img);
@@ -91,7 +91,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testGetPoint2D() {
+    public void testGetPoint2D() {
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3);
         Point2D src = new Point2D.Double(5, 5);
         Point2D dst = op.getPoint2D(src, null);
@@ -100,7 +100,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testEdgeZeroFill() {
+    public void testEdgeZeroFill() {
         // Use a kernel that averages all pixels
         Kernel kernel = new Kernel(3, 3, new float[]{
                 1/9f, 1/9f, 1/9f,
@@ -132,7 +132,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testEdgeNoOp() {
+    public void testEdgeNoOp() {
         Kernel kernel = new Kernel(3, 3, new float[]{
                 1/9f, 1/9f, 1/9f,
                 1/9f, 1/9f, 1/9f,
@@ -157,7 +157,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testEdgeReflect() {
+    public void testEdgeReflect() {
         Kernel kernel = new Kernel(3, 3, new float[]{
                 1/9f, 1/9f, 1/9f,
                 1/9f, 1/9f, 1/9f,
@@ -184,7 +184,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testEdgeWrap() {
+    public void testEdgeWrap() {
         Kernel kernel = new Kernel(3, 3, new float[]{
                 1/9f, 1/9f, 1/9f,
                 1/9f, 1/9f, 1/9f,
@@ -203,7 +203,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testRasterFilter() {
+    public void testRasterFilter() {
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3);
         
         BufferedImage srcImg = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
@@ -217,7 +217,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testCreateCompatibleDestImage() {
+    public void testCreateCompatibleDestImage() {
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3);
         BufferedImage src = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
         BufferedImage dst = op.createCompatibleDestImage(src, src.getColorModel());
@@ -228,7 +228,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testFilter3ByteBGR() {
+    public void testFilter3ByteBGR() {
         // ConvolveWithEdgeOp has a workaround for TYPE_3BYTE_BGR
         ConvolveWithEdgeOp op = new ConvolveWithEdgeOp(kernel3x3);
         BufferedImage src = new BufferedImage(10, 10, BufferedImage.TYPE_3BYTE_BGR);
@@ -244,7 +244,7 @@ class ConvolveWithEdgeOpTest {
     }
 
     @Test
-    void testFilterIndexed() {
+    public void testFilterIndexed() {
         byte[] gray = new byte[256];
         for (int i = 0; i < 256; i++) {
             gray[i] = (byte) i;
