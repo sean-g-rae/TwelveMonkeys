@@ -90,6 +90,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.skipFully;
+import static java.lang.Integer.toUnsignedLong;
+
 /**
  * Reader for Apple Mac Paint Picture (PICT) format.
  *
@@ -754,8 +757,8 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x2F:
                         // Apple reserved
                         dataLength = pStream.readUnsignedShort();
+                        skipFully(pStream, dataLength);
 
-                        pStream.readFully(new byte[dataLength], 0, dataLength);
                         if (DEBUG) {
                             System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
@@ -1421,7 +1424,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x96:
                     case 0x97:
                         dataLength = pStream.readUnsignedShort();
-                        pStream.readFully(new byte[dataLength], 0, dataLength);
+                        skipFully(pStream, dataLength);
                         if (DEBUG) {
                             System.out.printf("%s: 0x%04x - length: %d%n", PICT.APPLE_USE_RESERVED_FIELD, opCode, dataLength);
                         }
@@ -1449,7 +1452,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x9F:
                         // TODO: Move to special Apple Reserved handling?
                         dataLength = pStream.readUnsignedShort();
-                        pStream.readFully(new byte[dataLength], 0, dataLength);
+                        skipFully(pStream, dataLength);
                         if (DEBUG) {
                             System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
@@ -1488,7 +1491,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         if (DEBUG) {
                             System.out.printf("unCompressedQuickTime, length %d%n", dataLength);
                         }
-                        pStream.readFully(new byte[dataLength], 0, dataLength);
+                        skipFully(pStream, toUnsignedLong(dataLength));
                         break;
 
                     default:
@@ -1527,7 +1530,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         }
 
                         if (dataLength != 0) {
-                            pStream.readFully(new byte[dataLength], 0, dataLength);
+                            skipFully(pStream, toUnsignedLong(dataLength));
                         }
                 }
                 // We remember the last rectangle that was successfully rendered by a CompressedQuickTime opcode because it
@@ -1888,7 +1891,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         packedBytesCount = pStream.readUnsignedByte();
                     }
 
-                    pStream.readFully(new byte[packedBytesCount], 0, packedBytesCount);
+                    skipFully(pStream, packedBytesCount);
 
                     if (DEBUG) {
                         System.out.print("Skip " + skip + ", byteCount: " + packedBytesCount);
@@ -2193,7 +2196,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     else {
                         packedBytesCount = pStream.readUnsignedByte();
                     }
-                    pStream.readFully(new byte[packedBytesCount], 0, packedBytesCount);
+                    skipFully(pStream, packedBytesCount);
 
                     if (DEBUG) {
                         System.out.println();

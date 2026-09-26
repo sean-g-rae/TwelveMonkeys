@@ -33,7 +33,6 @@ package com.twelvemonkeys.image;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImagingOpException;
 import java.util.ArrayList;
@@ -115,12 +114,12 @@ public class ResampleOpTest {
                 assertResample(image, 15, 5, pFilterType);
             }
             catch (ImagingOpException e) {
-                // NOTE: It is currently allowed for filters to throw this exception and it is PLATFORM DEPENDENT..
+                // NOTE: It is currently allowed for filters to throw this exception, and it is PLATFORM DEPENDENT...
                 System.err.println("WARNING: " + e.getMessage() + ", image: " + image);
                 //e.printStackTrace();
             }
             catch (Throwable t) {
-                exceptions.add(t.toString() + ": " + image.toString());
+                exceptions.add(t + ": " + image);
             }
         }
 
@@ -355,6 +354,60 @@ public class ResampleOpTest {
             ResampleOp resampler = new ResampleOp(i, 14, ResampleOp.FILTER_LANCZOS);
             BufferedImage resizedImage = resampler.filter(myImage, null);
             assertNotNull(resizedImage);
+        }
+    }
+
+    @Test
+    void preservesInputAlpha() {
+        for (int imageType = BufferedImage.TYPE_INT_RGB; imageType <= BufferedImage.TYPE_BYTE_INDEXED; imageType++) {
+            BufferedImage source = new BufferedImage(10, 10, imageType);
+            BufferedImage scaled = new ResampleOp(100, 100, ResampleOp.FILTER_LANCZOS).filter(source, null);
+
+            assertNotNull(scaled);
+            assertEquals(100, scaled.getWidth());
+            assertEquals(100, scaled.getHeight());
+            assertEquals(source.getColorModel().hasAlpha(), scaled.getColorModel().hasAlpha(), String.format("Alpha input/output differs for type: %s", imageType));
+        }
+    }
+
+    @Test
+    void preservesInputAlphaFastResample() {
+        for (int imageType = BufferedImage.TYPE_INT_RGB; imageType <= BufferedImage.TYPE_BYTE_INDEXED; imageType++) {
+            BufferedImage source = new BufferedImage(1, 1, imageType);
+
+            // Resamples with unspecified filter + size smaller than min filter radius -> fastResample
+            BufferedImage scaled = new ResampleOp(100, 100).filter(source, null);
+
+            assertNotNull(scaled);
+            assertEquals(100, scaled.getWidth());
+            assertEquals(100, scaled.getHeight());
+            assertEquals(source.getColorModel().hasAlpha(), scaled.getColorModel().hasAlpha(), String.format("Alpha input/output differs for type: %s", imageType));
+        }
+    }
+
+    @Test
+    void allowsResampleToLargerOutput() {
+        for (int imageType = BufferedImage.TYPE_INT_RGB; imageType <= BufferedImage.TYPE_BYTE_INDEXED; imageType++) {
+            BufferedImage source = new BufferedImage(10, 10, imageType);
+            BufferedImage dest = new BufferedImage(40, 40, imageType);
+
+            // dest is larger than scaled result
+            BufferedImage scaled = new ResampleOp(20, 20, ResampleOp.FILTER_LANCZOS).filter(source, dest);
+
+            assertSame(dest, scaled);
+        }
+    }
+
+    @Test
+    void allowsResampleToSmallerOutput() {
+        for (int imageType = BufferedImage.TYPE_INT_RGB; imageType <= BufferedImage.TYPE_BYTE_INDEXED; imageType++) {
+            BufferedImage source = new BufferedImage(40, 40, imageType);
+            BufferedImage dest = new BufferedImage(10, 10, imageType);
+
+            // dest is smaller than scaled result
+            BufferedImage scaled = new ResampleOp(20, 20, ResampleOp.FILTER_LANCZOS).filter(source, dest);
+
+            assertSame(dest, scaled);
         }
     }
 
