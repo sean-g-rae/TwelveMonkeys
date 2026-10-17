@@ -30,10 +30,12 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import org.w3c.dom.NodeList;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
@@ -46,6 +48,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -62,6 +65,66 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
     @Override
     protected ImageReaderSpi createProvider() {
         return new TGAImageReaderSpi();
+    }
+
+    @Test
+    public void readTinyInputDeclaringHugeDimensionsIsRejectedBeforeAllocation() throws IOException {
+        // GHSA-7c3w-m9qh-j2vj: a 46-byte TGA header declaring huge dimensions allocated ~2.64 GB before this guard.
+        byte[] poc = Base64.getDecoder().decode("AAAKAAAAAAAAAAAANji9uyAIJXfC7O9koAw2esCQYMAYwTUX7JRX7bRKaLngdQ==");
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(poc)) {
+            reader.setInput(input);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            // "exceeding" is unique to the size-guard message, confirming rejection in the guard (before
+            // allocation), not a later EOF/parse error after a large buffer was committed.
+            assertTrue(exception.getMessage().contains("exceeding"), exception.getMessage());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void readColorMappedWithNonZeroColorMapOrigin() throws IOException {
+        // A color-mapped TGA with a non-zero color map origin (the index of the first stored
+        // entry). The origin was passed to IndexColorModel as a byte offset into the map data,
+        // reading past its end and throwing ArrayIndexOutOfBoundsException out of read().
+        byte[] header = {
+                0,          // id length
+                1,          // color map type: present
+                1,          // image type: color-mapped, uncompressed
+                1, 0,       // color map origin: 1
+                2, 0,       // color map length: 2 entries
+                24,         // color map entry depth: 24 bit
+                0, 0, 0, 0, // x/y origin
+                2, 0,       // width: 2
+                1, 0,       // height: 1
+                8,          // pixel depth: 8 bit (index)
+                0,          // image descriptor
+                // color map: 2 entries, BGR, for indices 1 and 2
+                0, 0, (byte) 0xFF, // index 1: red
+                0, (byte) 0xFF, 0, // index 2: green
+                // pixel data: 2 indices
+                1, 2
+        };
+        // Pad past the 26-byte v2 footer so the reader's end-of-file probe stays within the stream.
+        byte[] poc = Arrays.copyOf(header, 60);
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(poc)) {
+            reader.setInput(input);
+
+            BufferedImage image = reader.read(0);
+            assertEquals(2, image.getWidth());
+            assertEquals(1, image.getHeight());
+            assertEquals(0xFFFF0000, image.getRGB(0, 0));
+            assertEquals(0xFF00FF00, image.getRGB(1, 0));
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Override

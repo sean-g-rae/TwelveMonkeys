@@ -1,8 +1,10 @@
 
 package com.twelvemonkeys.imageio.plugins.webp;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
@@ -14,6 +16,7 @@ import java.awt.image.*;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -307,6 +310,56 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         }
         finally {
             reader.dispose();
+        }
+    }
+
+    @Test
+    public void testLosslessSimpleDistanceCodeOutsideAlphabet() throws IOException {
+        // 82 byte 1 x 1 lossless image, where the distance tree is stored as a "simple code" holding
+        // symbol 255. The distance alphabet has 40 symbols, and as a distance prefix 255 makes
+        // lz77decode shift by 126, wrap, and index the DISTANCES table with a negative value.
+        byte[] poc = Base64.getDecoder().decode(
+                "UklGRkoAAABXRUJQVlA4TD4AAAAvAAAAAAAIEq2vi4j+AwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(poc)) {
+            reader.setInput(stream);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            assertTrue(exception.getMessage().contains("alphabet"), exception.getMessage());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+          
+    @Test
+    public void testLosslessColorIndexOutsideColorTable() throws IOException {
+        // #1361: indices >= color_table_size must decode as transparent black (0x00000000)
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(
+                getClassLoaderResource("/webp/color_table_padding.webp"))) {
+
+            reader.setInput(stream);
+            assertColorTablePadding(reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private void assertColorTablePadding(BufferedImage image) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int expected = x < 8 ? 0x00000000 : 0xFF000000;
+                int mask = x < 8 ? 0xFFFFFFFF : 0xFF000000;
+
+                assertRGBEquals(
+                        "Unexpected pixel at (" + x + ", " + y + ")",
+                        expected, image.getRGB(x, y) & mask, 0);
+            }
         }
     }
 
